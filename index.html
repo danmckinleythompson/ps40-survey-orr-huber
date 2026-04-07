@@ -387,7 +387,16 @@ function renderResultsDashboard(){
   content.innerHTML=`
     <div style="max-width:740px;margin:0 auto">
       <h2 style="margin-bottom:4px">Live Results</h2>
-      <p style="font-family:var(--sans);font-size:14px;color:var(--text-muted);margin-bottom:28px">${nResp} respondents · ${R.length} profile evaluations</p>
+      <div class="card" style="display:flex;justify-content:center;gap:48px;text-align:center;padding:24px 28px">
+        <div>
+          <div style="font-family:var(--sans);font-size:36px;font-weight:700;color:var(--accent)">${nResp}</div>
+          <div style="font-family:var(--sans);font-size:13px;color:var(--text-muted)">Respondents</div>
+        </div>
+        <div>
+          <div style="font-family:var(--sans);font-size:36px;font-weight:700;color:var(--accent)">${R.length}</div>
+          <div style="font-family:var(--sans);font-size:13px;color:var(--text-muted)">Profile Evaluations</div>
+        </div>
+      </div>
 
       <div class="card">
         <h3>Mean Warmth by Treatment Arm</h3>
