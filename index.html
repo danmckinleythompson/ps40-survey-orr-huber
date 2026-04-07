@@ -261,6 +261,10 @@ async function saveToSheet(ratings){
   }catch(e){console.error(e);showToast("Save may have failed — your data was sent",3000)}
 }
 
+function renderResults(){
+  content.innerHTML=`<div style="text-align:center;padding:40px"><p style="font-family:var(--sans);color:var(--text-muted)">Loading results...</p></div>`;
+}
+
 function renderThanks(){
   content.innerHTML=`
     <div style="text-align:center;max-width:480px;margin:0 auto">
