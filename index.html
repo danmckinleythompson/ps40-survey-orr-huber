@@ -249,6 +249,8 @@ function submitProfile(){
 
 async function saveToSheet(ratings){
   showToast("Saving...",5000);
+  // Always save locally as backup
+  saveLocal(ratings);
   try{
     await fetch(WEBHOOK_URL,{
       method:"POST", mode:"no-cors",
@@ -270,24 +272,61 @@ function renderThanks(){
 }
 
 // ─── Results ────────────────────────────────────────────────────────
+function parseRow(row){
+  return {
+    ...row,
+    copartisan: row.copartisan===true||row.copartisan==="true"||row.copartisan==="TRUE",
+    policyCongruent: row.policyCongruent===true||row.policyCongruent==="true"||row.policyCongruent==="TRUE",
+    treatment: Number(row.treatment),
+    rating: Number(row.rating),
+    profileIndex: Number(row.profileIndex),
+  };
+}
+
+// Save to localStorage as backup
+function saveLocal(ratings){
+  try{
+    const existing=JSON.parse(localStorage.getItem("ps40_responses")||"[]");
+    const updated=[...existing,...ratings];
+    localStorage.setItem("ps40_responses",JSON.stringify(updated));
+  }catch(e){}
+}
+function getLocal(){
+  try{return JSON.parse(localStorage.getItem("ps40_responses")||"[]")}catch(e){return[]}
+}
+
 async function loadResults(){
   content.innerHTML=`<div style="text-align:center;padding:40px"><p style="font-family:var(--sans);color:var(--text-muted)">Loading results...</p></div>`;
+  
+  // Try fetching from Google Sheets
+  let sheetData=[];
+  let sheetOk=false;
   try{
-    const r=await fetch(WEBHOOK_URL);
+    const r=await fetch(WEBHOOK_URL,{redirect:"follow"});
     const d=await r.json();
-    if(d.status==="ok"){
-      // Convert string booleans back
-      state.responses=d.responses.map(row=>({
-        ...row,
-        copartisan: row.copartisan===true||row.copartisan==="true"||row.copartisan==="TRUE",
-        policyCongruent: row.policyCongruent===true||row.policyCongruent==="true"||row.policyCongruent==="TRUE",
-        treatment: Number(row.treatment),
-        rating: Number(row.rating),
-        profileIndex: Number(row.profileIndex),
-      }));
-      renderResultsDashboard();
-    } else { content.innerHTML=`<p>Error loading results</p>`; }
-  }catch(e){console.error(e);content.innerHTML=`<p style="font-family:var(--sans);color:var(--text-muted)">Could not load results. Check that the Apps Script is deployed.</p>`}
+    if(d.status==="ok"&&d.responses){
+      sheetData=d.responses.map(parseRow);
+      sheetOk=true;
+    }
+  }catch(e){console.warn("Sheet fetch failed, using local data:",e)}
+  
+  if(sheetOk){
+    state.responses=sheetData;
+  } else {
+    // Fallback to localStorage
+    const local=getLocal();
+    if(local.length){
+      state.responses=local;
+      showToast("Showing locally cached results",2500);
+    } else {
+      content.innerHTML=`<div style="text-align:center;padding:40px">
+        <p style="font-family:var(--sans);color:var(--text-muted);margin-bottom:12px">Could not load results from Google Sheets.</p>
+        <p style="font-family:var(--sans);font-size:13px;color:var(--text-muted)">Results are still being saved to your Google Sheet — open it directly to see the data, or try refreshing.</p>
+      </div>`;
+      return;
+    }
+  }
+  renderResultsDashboard();
 }
 
 function renderResultsDashboard(){
